@@ -1,13 +1,15 @@
 // components/FacebookAuthButton.tsx
 import { useState, useEffect } from 'react';
-import { TouchableOpacity, View, Text, Alert, ActivityIndicator } from 'react-native';
+import { TouchableOpacity, Text, Alert, ActivityIndicator } from 'react-native';
 import { AntDesign } from '@expo/vector-icons';
 import { supabase } from '../lib/supabase';
 import * as WebBrowser from 'expo-web-browser';
 import * as Linking from 'expo-linking';
+import { useRouter } from 'expo-router';
 
 export default function FacebookAuthButton() {
   const [loading, setLoading] = useState(false);
+  const router = useRouter();
 
   // Handle deep link after Facebook login
   useEffect(() => {
@@ -19,10 +21,15 @@ export default function FacebookAuthButton() {
           const refresh_token = params.get('refresh_token');
 
           if (access_token && refresh_token) {
-            await supabase.auth.setSession({
+            const { error } = await supabase.auth.setSession({
               access_token,
               refresh_token
             });
+
+            if (!error) {
+              // Use correct route path based on Expo Router conventions
+              router.push('/src/components/Homescreen');
+            }
           }
         }
       } catch (error) {
@@ -38,7 +45,7 @@ export default function FacebookAuthButton() {
     });
 
     return () => subscription.remove();
-  }, []);
+  }, [router]); // Add router to dependencies
 
   // Handle Facebook login
   const handleFacebookLogin = async () => {
@@ -58,8 +65,9 @@ export default function FacebookAuthButton() {
       if (data?.url) {
         await WebBrowser.openBrowserAsync(data.url);
       }
-    } catch (error:any) {
-      Alert.alert('Login Failed', error.message);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Unknown error occurred';
+      Alert.alert('Login Failed', message);
       setLoading(false);
     }
   };
@@ -76,7 +84,7 @@ export default function FacebookAuthButton() {
         alignItems: 'center',
         justifyContent: 'center',
         gap: 10,
-        marginTop:350,
+        marginTop: 350,
       }}
     >
       {loading ? (

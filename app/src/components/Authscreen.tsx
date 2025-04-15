@@ -1,6 +1,6 @@
-// screens/AuthScreen.tsx
+// app/(tabs)/index.tsx
+import FacebookAuthButton from '../components/AuthFacebook';
 import { View } from 'react-native';
-import FacebookAuthButton from './AuthFacebook';
 
 export default function AuthScreen() {
   return (
