@@ -54,7 +54,7 @@ export default function IndexScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.welcomeText}>👋 Welcome, {userName}!</Text>
+      <Text style={styles.welcomeText}>👋 Welcome {userName}</Text>
       <Text style={styles.subText}>Glad to see you again 😄</Text>
     </View>
   );
