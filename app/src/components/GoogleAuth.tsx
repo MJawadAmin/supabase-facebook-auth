@@ -1,77 +1,105 @@
-import React, { useEffect } from 'react';
-import { GoogleSignin, GoogleSigninButton, statusCodes } from '@react-native-google-signin/google-signin';
+import { useState, useEffect } from 'react';
+import { TouchableOpacity, Text, Alert, ActivityIndicator } from 'react-native';
+import { AntDesign } from '@expo/vector-icons';
 import { supabase } from '../lib/supabase';
-import * as AuthSession from 'expo-auth-session'; // Import AuthSession for redirectUri
+import * as WebBrowser from 'expo-web-browser';
 import { useRouter } from 'expo-router';
+import * as AuthSession from 'expo-auth-session';
+
+WebBrowser.maybeCompleteAuthSession();
 
 export default function GoogleAuthButton() {
+  const [loading, setLoading] = useState(false);
   const router = useRouter();
 
-  // Configure GoogleSignin on mount
+  // ✅ Log auth state changes
   useEffect(() => {
-    GoogleSignin.configure({
-      scopes: ['https://www.googleapis.com/auth/drive.readonly'], // Adjust based on required permissions
-      webClientId: '359467660879-chm13qbj1ms5m1o5r1ie017liiq4fs9i.apps.googleusercontent.com', // Replace this with your actual web client ID
+    const { data: listener } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log('📢 [AuthStateChange] Event:', event);
+      console.log('📢 [AuthStateChange] Session:', session);
+
+      if (event === 'SIGNED_IN' && session) {
+        console.log('✅ [Router] Navigating to /tabs');
+        Alert.alert('Success', 'You are now logged in!');
+        router.push('/(tabs)'); // Try '/tabs' if '(tabs)' does not work
+      } else if (event === 'SIGNED_OUT') {
+        console.log('❌ [AuthStateChange] User signed out');
+      } else {
+        console.log('⚠️ [AuthStateChange] Unknown event:', event);
+      }
     });
-  }, []);
+
+    return () => {
+      console.log('🧹 [Cleanup] Removing auth listener');
+      listener?.subscription.unsubscribe();
+    };
+  }, [router]);
 
   const handleGoogleLogin = async () => {
     try {
-      // Check if Play Services are available
-      await GoogleSignin.hasPlayServices();
+      setLoading(true);
 
-      // Sign in with Google
-      const userInfo = await GoogleSignin.signIn();
+      // Use AuthSession to get the redirect URI
+      const redirectUri = AuthSession.makeRedirectUri({
+        useProxy: true,}as any); // Cast to any to avoid type issues
+      
+      console.log('🔗 [Redirect URI]:', redirectUri);
 
-      if (userInfo) {
-        // Use AuthSession to create the redirect URI
-        const redirectUri = AuthSession.makeRedirectUri({
-          path: 'google-auth', // This should match the redirect URI you set in Supabase
-        });
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: redirectUri, // Static redirect URI
+          skipBrowserRedirect: true, // Let Expo handle the redirect
+        },
+      });
 
-        // Fetch tokens after signing in
-        const { idToken } = await GoogleSignin.getTokens();
-
-        if (idToken) {
-          // Now it's safe to use idToken for Supabase sign-in
-          const { data, error } = await supabase.auth.signInWithIdToken({
-            provider: 'google',
-            token: idToken, // Pass the idToken retrieved from Google
-          });
-
-          if (error) {
-            throw error; // Handle error if any
-          }
-
-          console.log('Supabase Auth Data:', data); // Success - Logged in
-
-          // Redirect to the tabs page after successful login
-          router.replace('/(tabs)');
-        } else {
-          throw new Error('No ID token available');
-        }
-      } else {
-        throw new Error('Google SignIn returned no user info');
+      console.log('📡 [signInWithOAuth] Response Data:', data);
+      if (error) {
+        console.error('❌ [signInWithOAuth] Error:', error.message || error);
+        throw error;
       }
+
+      if (data?.url) {
+        console.log('🌐 [Browser] Opening OAuth URL:', data.url);
+        await WebBrowser.openBrowserAsync(data.url);
+      } else {
+        console.warn('⚠️ [signInWithOAuth] No URL returned');
+      }
+      router.push('/(tabs)'); // Navigate to the tabs page after login
     } catch (error: any) {
-      // Error handling based on error type
-      if (error.code === statusCodes.SIGN_IN_CANCELLED) {
-        console.log('User cancelled the login flow');
-      } else if (error.code === statusCodes.IN_PROGRESS) {
-        console.log('Sign-in operation is in progress');
-      } else if (error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
-        console.log('Play Services not available or outdated');
-      } else {
-        console.error('Error during Google Sign-in:', error.message);
-      }
+      console.error('🚨 [handleGoogleLogin] Login Failed:', error.message || error);
+      Alert.alert('Login Failed', error.message || 'Something went wrong');
+    } finally {
+      setLoading(false);
+      console.log('⏹️ [handleGoogleLogin] Finished');
     }
   };
 
   return (
-    <GoogleSigninButton
-      size={GoogleSigninButton.Size.Wide}
-      color={GoogleSigninButton.Color.Dark}
+    <TouchableOpacity
       onPress={handleGoogleLogin}
-    />
+      disabled={loading}
+      style={{
+        backgroundColor: '#DB4437',
+        padding: 15,
+        borderRadius: 8,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginTop: 20,
+        marginHorizontal: 30,
+      }}
+    >
+      {loading ? (
+        <ActivityIndicator color="white" />
+      ) : (
+        <>
+          <AntDesign name="google" size={24} color="white" style={{ marginRight: 10 }} />
+          <Text style={{ color: 'white', fontWeight: '600', fontSize: 16 }}>
+            Continue with Google
+          </Text>
+        </>
+      )}
+    </TouchableOpacity>
   );
 }

@@ -25,7 +25,7 @@
     "@supabase/supabase-js": "^2.49.4",
     "emailjs-com": "^3.2.0",
     "expo": "~52.0.46",
-    "expo-auth-session": "^6.0.3",
+    "expo-auth-session": "~6.0.3",
     "expo-blur": "~14.0.3",
     "expo-constants": "~17.0.8",
     "expo-font": "~13.0.4",
@@ -48,7 +48,8 @@
     "react-native-screens": "~4.4.0",
     "react-native-url-polyfill": "^2.0.0",
     "react-native-web": "~0.19.13",
-    "react-native-webview": "13.12.5"
+    "react-native-webview": "13.12.5",
+    "expo-crypto": "~14.0.2"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
