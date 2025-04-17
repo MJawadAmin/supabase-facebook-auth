@@ -1,0 +1,102 @@
+// components/GoogleAuthButton.tsx
+import { useState, useEffect } from 'react';
+import { TouchableOpacity, Text, Alert, ActivityIndicator } from 'react-native';
+import { AntDesign } from '@expo/vector-icons';
+import { supabase } from '../lib/supabase';
+import * as WebBrowser from 'expo-web-browser';
+import * as Linking from 'expo-linking';
+import { useRouter } from 'expo-router';
+import * as AuthSession from 'expo-auth-session';
+
+WebBrowser.maybeCompleteAuthSession();
+
+export default function GoogleAuthButton() {
+  const [loading, setLoading] = useState(false);
+const router = useRouter();
+
+useEffect(() => {
+  const handleAuthRedirect = async (url: string) => {
+    try {
+      const parsedUrl = new URL(url);
+      const access_token = parsedUrl.searchParams.get('access_token');
+      const refresh_token = parsedUrl.searchParams.get('refresh_token');
+
+      if (access_token && refresh_token) {
+        const { error } = await supabase.auth.setSession({
+          access_token,
+          refresh_token,
+        });
+
+        if (!error) {
+          router.push('/(tabs)');
+        }
+      }
+    } catch (error) {
+      Alert.alert('Error', 'Failed to handle login');
+    } finally {
+      setLoading(false);
+      WebBrowser.dismissBrowser();
+    }
+  };
+
+  const subscription = Linking.addEventListener('url', ({ url }) => {
+    handleAuthRedirect(url);
+  });
+
+  return () => subscription.remove();
+}, [router]);
+
+
+  const handleGoogleLogin = async () => {
+    try {
+      setLoading(true);
+      const redirectUri = AuthSession.makeRedirectUri({ useProxy: true });
+
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: redirectUri,
+          skipBrowserRedirect: true,
+        },
+      });
+
+      if (error) throw error;
+
+      if (data?.url) {
+        await WebBrowser.openBrowserAsync(data.url);
+      }
+    } catch (error: any) {
+      Alert.alert('Login Failed', error.message || 'Something went wrong');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <TouchableOpacity
+      onPress={handleGoogleLogin}
+      disabled={loading}
+      style={{
+        backgroundColor: '#DB4437',
+        padding: 15,
+        borderRadius: 8,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginTop: 20,
+        marginHorizontal: 30,
+      }}
+    >
+      {loading ? (
+        <ActivityIndicator color="white" />
+      ) : (
+        <>
+          <AntDesign name="google" size={24} color="white" style={{ marginRight: 10 }} />
+          <Text style={{ color: 'white', fontWeight: '600', fontSize: 16 }}>
+            Continue with Google
+          </Text>
+        </>
+      )}
+    </TouchableOpacity>
+  );
+}

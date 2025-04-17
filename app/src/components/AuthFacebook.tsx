@@ -6,30 +6,30 @@ import { supabase } from '../lib/supabase';
 import * as WebBrowser from 'expo-web-browser';
 import * as Linking from 'expo-linking';
 import { useRouter } from 'expo-router';
+import * as AuthSession from 'expo-auth-session';
+
+// Ensure the auth session is completed
+WebBrowser.maybeCompleteAuthSession();
 
 export default function FacebookAuthButton() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
-  // Handle deep link after Facebook login
   useEffect(() => {
     const handleAuthRedirect = async (url: string) => {
       try {
-        if (url.includes('#access_token=')) {
-          const params = new URLSearchParams(url.split('#')[1]);
-          const access_token = params.get('access_token');
-          const refresh_token = params.get('refresh_token');
+        const parsedUrl = new URL(url);
+        const access_token = parsedUrl.searchParams.get('access_token');
+        const refresh_token = parsedUrl.searchParams.get('refresh_token');
 
-          if (access_token && refresh_token) {
-            const { error } = await supabase.auth.setSession({
-              access_token,
-              refresh_token
-            });
+        if (access_token && refresh_token) {
+          const { error } = await supabase.auth.setSession({
+            access_token,
+            refresh_token,
+          });
 
-            if (!error) {
-              // Use correct route path based on Expo Router conventions
-              router.push('/src/components/Homescreen');
-            }
+          if (!error) {
+            router.push('/home'); // Redirect to home on successful login
           }
         }
       } catch (error) {
@@ -45,29 +45,33 @@ export default function FacebookAuthButton() {
     });
 
     return () => subscription.remove();
-  }, [router]); // Add router to dependencies
+  }, [router]);
 
-  // Handle Facebook login
   const handleFacebookLogin = async () => {
     try {
       setLoading(true);
-      const redirectUrl = Linking.createURL('/auth/callback');
+console.log("facebook login")
+      // Generate the redirect URI dynamically
+      const redirectUri = AuthSession.makeRedirectUri({ useProxy: true });
 
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'facebook',
         options: {
-          redirectTo: redirectUrl,
-          skipBrowserRedirect: true
-        }
+          redirectTo: redirectUri,
+          skipBrowserRedirect: true,
+        },
       });
 
       if (error) throw error;
+
       if (data?.url) {
         await WebBrowser.openBrowserAsync(data.url);
       }
-    } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Unknown error occurred';
-      Alert.alert('Login Failed', message);
+      console.log("facebook worked: ", data)
+      router.push('/(tabs)'); // Redirect to home on successful login
+    } catch (error: any) {
+      Alert.alert('Login Failed', error.message || 'Unknown error occurred');
+    } finally {
       setLoading(false);
     }
   };

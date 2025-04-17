@@ -5,7 +5,7 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "your.app.scheme",
+    "scheme": "supabasefacebookauth",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
@@ -13,10 +13,10 @@
       "bundleIdentifier": "com.your.app"
     },
     "android": {
+      "package": "com.your.app",
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
-        "backgroundColor": "#ffffff",
-        "package":"com.your.app"
+        "backgroundColor": "#ffffff"
       }
     },
     "web": {
