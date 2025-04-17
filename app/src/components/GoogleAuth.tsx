@@ -1,8 +1,12 @@
 import React, { useEffect } from 'react';
 import { GoogleSignin, GoogleSigninButton, statusCodes } from '@react-native-google-signin/google-signin';
 import { supabase } from '../lib/supabase';
+import * as AuthSession from 'expo-auth-session'; // Import AuthSession for redirectUri
+import { useRouter } from 'expo-router';
 
 export default function GoogleAuthButton() {
+  const router = useRouter();
+
   // Configure GoogleSignin on mount
   useEffect(() => {
     GoogleSignin.configure({
@@ -20,6 +24,11 @@ export default function GoogleAuthButton() {
       const userInfo = await GoogleSignin.signIn();
 
       if (userInfo) {
+        // Use AuthSession to create the redirect URI
+        const redirectUri = AuthSession.makeRedirectUri({
+          path: 'google-auth', // This should match the redirect URI you set in Supabase
+        });
+
         // Fetch tokens after signing in
         const { idToken } = await GoogleSignin.getTokens();
 
@@ -35,6 +44,9 @@ export default function GoogleAuthButton() {
           }
 
           console.log('Supabase Auth Data:', data); // Success - Logged in
+
+          // Redirect to the tabs page after successful login
+          router.replace('/(tabs)');
         } else {
           throw new Error('No ID token available');
         }
