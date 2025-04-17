@@ -21,7 +21,7 @@ export default function GoogleAuthButton() {
       if (event === 'SIGNED_IN' && session) {
         console.log('✅ [Router] Navigating to /tabs');
         Alert.alert('Success', 'You are now logged in!');
-        router.push('/(tabs)'); // Try '/tabs' if '(tabs)' does not work
+        router.push('/(tabs)');
       } else if (event === 'SIGNED_OUT') {
         console.log('❌ [AuthStateChange] User signed out');
       } else {
@@ -41,7 +41,8 @@ export default function GoogleAuthButton() {
 
       // Use AuthSession to get the redirect URI
       const redirectUri = AuthSession.makeRedirectUri({
-        useProxy: true,}as any); // Cast to any to avoid type issues
+        useProxy: true,
+      }as any);
       
       console.log('🔗 [Redirect URI]:', redirectUri);
 
@@ -65,7 +66,18 @@ export default function GoogleAuthButton() {
       } else {
         console.warn('⚠️ [signInWithOAuth] No URL returned');
       }
-      router.push('/(tabs)'); // Navigate to the tabs page after login
+
+      // Manually check the session after OAuth login
+      const { data: session, error: sessionError } = await supabase.auth.getSession();
+      console.log('📢 [Session after login]:', session, sessionError);
+
+      if (session) {
+        // Redirect user after successful login
+        router.push('/(tabs)');
+      } else {
+        console.error('❌ [Session Error] No active session detected');
+        Alert.alert('Session Error', 'Failed to retrieve session');
+      }
     } catch (error: any) {
       console.error('🚨 [handleGoogleLogin] Login Failed:', error.message || error);
       Alert.alert('Login Failed', error.message || 'Something went wrong');

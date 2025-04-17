@@ -7,6 +7,7 @@ import GoogleAuthButton from './src/components/GoogleAuth'; // Fix component nam
 export default function Index() {
   return (
     <>
+    
       <AuthFacebook />
       <GoogleAuthButton />
       

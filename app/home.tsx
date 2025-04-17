@@ -1,22 +1,16 @@
-import { View, Text, StyleSheet } from 'react-native';
+// components/FacebookAuthButton.tsx
 
-export default function HomeScreen() {
+import React from 'react';
+import AuthFacebook from './src/components/AuthFacebook'; // Adjust the path if needed
+import GoogleAuthButton from './src/components/GoogleAuth'; // Fix component name & path
+
+export default function Index() {
   return (
-    <View style={styles.container}>
-      <Text style={styles.text}>🎉 Welcome to the Home Page!</Text>
-    </View>
+    <>
+    
+      <AuthFacebook />
+      <GoogleAuthButton />
+      
+    </>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#fff',
-  },
-  text: {
-    fontSize: 24,
-    fontWeight: 'bold',
-  },
-});
